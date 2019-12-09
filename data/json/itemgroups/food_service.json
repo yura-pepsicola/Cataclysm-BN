@@ -116,19 +116,18 @@
   {
     "id": "bar_food",
     "type": "item_group",
-    "subtype": "distribution",
-    "entries": [
-      { "item": "mayonnaise", "prob": 3 },
-      { "group": "ketchup_sealed_rng", "prob": 3 },
-      { "group": "mustard_sealed_rng", "prob": 3 },
+    "items": [
+      [ "mayonnaise", 3 ],
+      [ "mustard", 3 ],
+      [ "ketchup", 3 ],
       { "item": "pickle", "prob": 5, "charges": 6, "container-item": "jar_glass_sealed" },
-      { "item": "pickle", "prob": 5 },
-      { "item": "cheeseburger", "prob": 10 },
-      { "item": "hamburger", "prob": 8 },
-      { "item": "sloppyjoe", "prob": 6 },
-      { "item": "fries", "prob": 10 },
-      { "item": "cheese_fries", "prob": 7 },
-      { "item": "onion_rings", "prob": 8 }
+      [ "pickle", 5 ],
+      [ "cheeseburger", 10 ],
+      [ "hamburger", 8 ],
+      [ "sloppyjoe", 6 ],
+      [ "fries", 10 ],
+      [ "cheese_fries", 7 ],
+      [ "onion_rings", 8 ]
     ]
   },
   {

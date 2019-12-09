@@ -31,7 +31,7 @@
     "id": "sausage",
     "name": "smoked sausage",
     "conditional_names": [
-      { "type": "FLAG", "condition": "CANNIBALISM", "name": "smoked Mannwurst" },
+      { "type": "FLAG", "condition": "CANNIBALISM", "name": "Mannwurst" },
       { "type": "COMPONENT_ID", "condition": "mutant", "name": { "str_sp": "sinister %s" } }
     ],
     "copy-from": "sausage_raw",
@@ -223,7 +223,11 @@
     "name": "currywurst",
     "conditional_names": [
       { "type": "FLAG", "condition": "CANNIBALISM", "name": { "str_sp": "cheapskate %s" } },
-      { "type": "COMPONENT_ID", "condition": "mutant", "name": { "str_sp": "bloodcurdling %s" } }
+      {
+        "type": "COMPONENT_ID",
+        "condition": "mutant",
+        "name": { "str_sp": "bloodcurdling %s" }
+      }
     ],
     "weight": "85 g",
     "color": "red",
