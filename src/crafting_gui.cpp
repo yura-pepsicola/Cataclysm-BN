@@ -275,6 +275,7 @@ const recipe *select_crafting_recipe( int &batch_size )
     bool done = false;
     bool batch = false;
     bool show_hidden = false;
+    bool show_unavailable = false;
     size_t num_hidden = 0;
     int num_recipe = 0;
     int batch_line = 0;
@@ -298,6 +299,7 @@ const recipe *select_crafting_recipe( int &batch_size )
     ctxt.register_action( "CYCLE_BATCH" );
     ctxt.register_action( "RELATED_RECIPES" );
     ctxt.register_action( "HIDE_SHOW_RECIPE" );
+    ctxt.register_action( "TOGGLE_UNAVAILABLE" );
 
     const inventory &crafting_inv = g->u.crafting_inventory();
     const std::vector<npc *> helpers = g->u.get_crafting_helpers();
@@ -306,10 +308,17 @@ const recipe *select_crafting_recipe( int &batch_size )
     const auto &available_recipes = g->u.get_available_recipes( crafting_inv, &helpers );
     std::map<const recipe *, availability> availability_cache;
 
+    std::vector<const recipe *> all_recipes_flat;
+    for( const auto &pr : recipe_dict ) {
+        all_recipes_flat.emplace_back( &pr.second );
+    }
+    const auto &all_recipes = recipe_subset( {}, all_recipes_flat );
+
     ui.on_redraw( [&]( const ui_adaptor & ) {
         const TAB_MODE m = ( batch ) ? BATCH : ( filterstring.empty() ) ? NORMAL : FILTERED;
         draw_recipe_tabs( w_head, tab.cur(), m );
-        draw_recipe_subtabs( w_subhead, tab.cur(), subtab.cur(), available_recipes, m );
+        const auto &shown_recipes = show_unavailable ? all_recipes : available_recipes;
+        draw_recipe_subtabs( w_subhead, tab.cur(), subtab.cur(), shown_recipes, m );
 
         if( !show_hidden ) {
             draw_hidden_amount( w_head, num_hidden, num_recipe );
@@ -580,6 +589,7 @@ const recipe *select_crafting_recipe( int &batch_size )
     } );
 
     do {
+        const auto &shown_recipes = show_unavailable ? all_recipes : available_recipes;
         if( recalc ) {
             // When we switch tabs, redraw the header
             recalc = false;
@@ -608,7 +618,7 @@ const recipe *select_crafting_recipe( int &batch_size )
                     auto qry = trim( filterstring );
                     size_t qry_begin = 0;
                     size_t qry_end = 0;
-                    recipe_subset filtered_recipes = available_recipes;
+                    recipe_subset filtered_recipes = shown_recipes;
                     do {
                         // Find next ','
                         qry_end = qry.find_first_of( ',', qry_begin );
@@ -656,9 +666,9 @@ const recipe *select_crafting_recipe( int &batch_size )
                                     auto &learned = g->u.get_learned_recipes();
                                     recipe_subset temp_subset;
                                     if( query_is_yes( qry_filter_str ) ) {
-                                        temp_subset = available_recipes.intersection( learned );
+                                        temp_subset = shown_recipes.intersection( learned );
                                     } else {
-                                        temp_subset = available_recipes.difference( learned );
+                                        temp_subset = shown_recipes.difference( learned );
                                     }
                                     filtered_recipes = filtered_recipes.intersection( temp_subset );
                                     break;
@@ -675,14 +685,14 @@ const recipe *select_crafting_recipe( int &batch_size )
                     } while( qry_end != std::string::npos );
                     picking.insert( picking.end(), filtered_recipes.begin(), filtered_recipes.end() );
                 } else if( subtab.cur() == "CSC_*_FAVORITE" ) {
-                    picking = available_recipes.favorite();
+                    picking = shown_recipes.favorite();
                 } else if( subtab.cur() == "CSC_*_RECENT" ) {
-                    picking = available_recipes.recent();
+                    picking = shown_recipes.recent();
                 } else if( subtab.cur() == "CSC_*_HIDDEN" ) {
-                    current = available_recipes.hidden();
+                    current = shown_recipes.hidden();
                     show_hidden = true;
                 } else {
-                    picking = available_recipes.in_category( tab.cur(), subtab.cur() != "CSC_ALL" ? subtab.cur() : "" );
+                    picking = shown_recipes.in_category( tab.cur(), subtab.cur() != "CSC_ALL" ? subtab.cur() : "" );
                 }
 
                 if( !show_hidden ) {
@@ -742,7 +752,7 @@ const recipe *select_crafting_recipe( int &batch_size )
             std::string start = subtab.cur();
             do {
                 subtab.prev();
-            } while( subtab.cur() != start && available_recipes.empty_category( tab.cur(),
+            } while( subtab.cur() != start && shown_recipes.empty_category( tab.cur(),
                      subtab.cur() != "CSC_ALL" ? subtab.cur() : "" ) );
             recalc = true;
         } else if( action == "SCROLL_UP" ) {
@@ -758,7 +768,7 @@ const recipe *select_crafting_recipe( int &batch_size )
             std::string start = subtab.cur();
             do {
                 subtab.next();
-            } while( subtab.cur() != start && available_recipes.empty_category( tab.cur(),
+            } while( subtab.cur() != start && shown_recipes.empty_category( tab.cur(),
                      subtab.cur() != "CSC_ALL" ? subtab.cur() : "" ) );
             recalc = true;
         } else if( action == "NEXT_TAB" ) {
@@ -908,12 +918,16 @@ const recipe *select_crafting_recipe( int &batch_size )
                 recalc = true;
                 continue;
             }
-            std::string recipe_name = peek_related_recipe( current[line], available_recipes );
+            std::string recipe_name = peek_related_recipe( current[line], shown_recipes );
             if( recipe_name.empty() ) {
                 keepline = true;
             } else {
                 filterstring = recipe_name;
             }
+
+            recalc = true;
+        } else if( action == "TOGGLE_UNAVAILABLE" ) {
+            show_unavailable = !show_unavailable;
 
             recalc = true;
         }
